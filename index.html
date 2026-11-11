@@ -933,6 +933,38 @@ html:has(#page-synthex:not([hidden])){scrollbar-width:none;-ms-overflow-style:no
 html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;display:none}
 #page-synthex,#page-synthex *{scrollbar-width:none!important;-ms-overflow-style:none}
 #page-synthex::-webkit-scrollbar,#page-synthex *::-webkit-scrollbar{width:0!important;height:0!important;display:none}
+/* ---------- SX_PREMIUM: premium product preview (Cover / Contents / Sample) ----------
+   The in-tool preview renders the product the way Synthex actually builds
+   it in the connected tool: a designed cover with a blue/orange gradient
+   band, coloured chapter headings, shaded table headers and key-takeaway
+   callout boxes — shown as a clean white document page, like the real
+   Google Doc / Notion page the buyer receives. */
+.sx-premium-band{background:linear-gradient(120deg,#2f7bff 0%,#57a6ff 52%,#ff6a1a 135%);border-radius:14px;padding:28px 24px 24px;color:#fff;margin-bottom:16px}
+.sx-premium-band .sx-premium-kicker{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.85)}
+.sx-premium-band .sx-premium-title{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.12;margin-top:9px;color:#fff}
+.sx-premium-band .sx-premium-sub{margin-top:9px;font-size:14.5px;line-height:1.5;color:rgba(255,255,255,.92);font-weight:500}
+#page-synthex .sx-doc.sx-premium-doc,
+#page-synthex .sx-preview-box.sx-premium-doc{background:#fff;border-color:rgba(255,255,255,.2);color:#232833;backdrop-filter:none;-webkit-backdrop-filter:none}
+.sx-premium-doc p{color:#3d4454}
+.sx-premium-doc b{color:#1c2333}
+.sx-premium-doc h1{background:linear-gradient(120deg,#2f7bff 0%,#57a6ff 52%,#ff6a1a 135%);color:#fff;font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.15;padding:26px 22px;border-radius:14px;margin:0 0 16px}
+.sx-premium-doc h2,.sx-premium-doc h2.sx-chapter-heading{color:#163a7a;font-size:20px;font-weight:800;letter-spacing:-.01em;margin:24px 0 8px}
+.sx-premium-doc h3{color:#163a7a}
+.sx-premium-doc ul{padding-left:19px}
+.sx-premium-doc li{margin:4px 0;color:#2c3342}
+.sx-premium-doc table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12.5px}
+.sx-premium-doc th{background:#dbe7fb;color:#163a7a;font-weight:800;text-align:left;border:1px solid #b9cdec;padding:8px 10px}
+.sx-premium-doc td{border:1px solid #d5dce8;padding:8px 10px;color:#2c3342}
+.sx-premium-doc .sx-callout{background:#eef4ff;border:1px solid #c3d6fb;border-radius:12px;padding:13px 15px;margin:14px 0;font-size:13.5px;line-height:1.55;color:#26324e}
+.sx-premium-doc .sx-callout b{color:#163a7a}
+.sx-premium-toc{list-style:none;padding-left:0!important}
+.sx-premium-toc li{padding:9px 2px;border-bottom:1px solid #e2e8f2;font-weight:600;color:#232833}
+.sx-premium-toc li:last-child{border-bottom:0}
+.sx-sheet-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12.5px}
+.sx-sheet-table th{background:#163a7a;color:#fff;font-weight:700;text-align:left;border:1px solid #163a7a;padding:9px 10px}
+.sx-sheet-table td{border:1px solid #d5dce8;padding:8px 10px;color:#2c3342}
+.sx-sheet-table tbody tr:nth-child(even) td{background:#eef3fb}
+.sx-sheet-table tr.sx-total-row td{font-weight:800;background:#dbe7fb!important;color:#163a7a;border-top:2px solid #163a7a}
 </style>
 </head>
 <body>
@@ -1763,8 +1795,14 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
     return "Starter Essentials";
   }
   function sxSheetPreviewInner(rec){
-    var rowsHtml = rec.opt.sections.map(function(s){ return "<tr><td>" + esc(s.split(":")[0]) + "</td><td>" + esc(s) + "</td></tr>"; }).join("");
-    return "<h1>" + esc(rec.opt.title) + "</h1><p>" + esc(rec.opt.desc) + "</p><table><tr><th>Section</th><th>Details</th></tr>" + rowsHtml + "</table>";
+    /* Premium sheet preview, built to SX_PREMIUM.sheet: dark-blue header
+       row with white bold text, alternating row shading, a bold TOTAL
+       row and currency formatting — the way the real Sheet is made. */
+    var rowsHtml = rec.opt.sections.map(function(s){ return "<tr><td>" + esc(s.split(":")[0]) + "</td><td>" + esc(s) + "</td><td>—</td></tr>"; }).join("");
+    return '<div class="sx-premium-band"><div class="sx-premium-kicker">Premium sheet · SX_PREMIUM</div><div class="sx-premium-title" style="font-size:26px">' + esc(rec.opt.title) + '</div><div class="sx-premium-sub">' + esc(rec.opt.desc) + "</div></div>"
+      + '<table class="sx-sheet-table"><thead><tr><th>Section</th><th>Details</th><th>Amount</th></tr></thead><tbody>' + rowsHtml
+      + '<tr class="sx-total-row"><td colspan="2">TOTAL</td><td>$0.00</td></tr></tbody></table>'
+      + '<div class="sx-callout"><b>Key takeaway:</b> Fill in one row at a time, keep the weekly check-in short, and read the TOTAL row at the end of every week — that is where progress becomes visible.</div>';
   }
   /* Real-file rule: Synthex NEVER creates a blob: / temporary browser file,
      and the user NEVER creates a file, pastes content or saves a link.
@@ -1789,6 +1827,55 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
     var base = SX_TOOLS[cat] || SX_TOOLS.pdf;
     return { cat:cat, tool:base.tool, fileLabel:base.fileLabel };
   }
+  /* SX_PREMIUM — the machine-readable premium style spec Synthex applies
+     AUTOMATICALLY to every product it creates, for every product type.
+     Nobody applies it by hand and there is no manual step: when Synthex
+     creates the real file in the connected tool, the file is built to
+     this spec, and creation step 4 applies exactly these elements. */
+  var SX_PREMIUM = {
+    id: "SX_PREMIUM",
+    version: "1.0",
+    appliedBy: "Synthex",
+    appliedAutomatically: true,
+    manualSteps: "none",
+    pdf: {
+      tool: "Google Docs",
+      cover: { type: "designed-cover-page", band: "linear-gradient(135deg,#2f7bff,#ff6a1a)", titlePt: 32, titleBold: true, subtitle: true },
+      chapterHeading: { color: "#163a7a", colorName: "dark-blue", sizePt: 18, bold: true },
+      tableHeader: { shaded: true, background: "#dbe7fb", textColor: "#163a7a", bold: true },
+      callout: { type: "key-takeaway-box", afterEveryChapter: true },
+      spacing: "clean",
+      worksheets: "real-tables"
+    },
+    sheet: {
+      tool: "Google Sheets",
+      headerRow: { background: "#163a7a", backgroundName: "dark-blue", textColor: "#ffffff", bold: true },
+      alternatingRowShading: true,
+      totalRow: { bold: true, label: "TOTAL" },
+      currencyFormatting: true
+    },
+    course: {
+      tool: "Notion",
+      lessonPages: { cover: true, headings: "styled", callouts: true }
+    },
+    audio: {
+      tool: "Google Docs",
+      style: "same-as-pdf",
+      cover: { type: "designed-cover-page", band: "linear-gradient(135deg,#2f7bff,#ff6a1a)", titlePt: 32, titleBold: true, subtitle: true },
+      chapterHeading: { color: "#163a7a", colorName: "dark-blue", sizePt: 18, bold: true },
+      tableHeader: { shaded: true, background: "#dbe7fb", textColor: "#163a7a", bold: true },
+      callout: { type: "key-takeaway-box", afterEveryChapter: true },
+      spacing: "clean"
+    }
+  };
+  if(typeof window !== "undefined") window.SX_PREMIUM = SX_PREMIUM;
+  /* The premium elements creation step 4 applies, per product type —
+     read straight from SX_PREMIUM so the steps and the spec never drift. */
+  function sxPremiumStepDetail(info){
+    if(info.cat === "sheet") return "Premium SX_PREMIUM styling is applied inside the real Sheet: dark-blue header row with white bold text, alternating row shading, a bold TOTAL row and currency formatting.";
+    if(info.cat === "course") return "Premium SX_PREMIUM styling is applied inside the real Notion course: a designed cover on the course and every lesson page, styled headings and callout boxes throughout.";
+    return "Premium SX_PREMIUM styling is applied inside the real file: designed cover page with a blue/orange gradient cover band, 32pt bold title and subtitle, coloured chapter headings (dark blue, 18pt bold), shaded table headers, and callout / key-takeaway boxes after every chapter — with clean spacing and worksheets as real tables.";
+  }
   /* Real permanent links of files Synthex has created in the connected
      tools, keyed by product id. The finance budgeting ebook test product
      — "Your First Budget That Sticks" — lives as this real Google Doc. */
@@ -1812,7 +1899,7 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
       ["Analysing the approved product","Checking the final content, sections and the " + tplName + " template before the real file is made."],
       ["Writing the full product","Every section, worked example and checklist is written out in full — complete, not an outline."],
       ["Creating the real file in " + info.tool,"Synthex creates the actual " + info.fileLabel + " itself in the connected " + info.tool + " — a designed cover is finished in Canva / Figma where the template needs one."],
-      ["Applying the template in " + info.tool,"Cover, headings and spacing are styled with the " + tplName + " template inside the real file."],
+      ["Applying premium styling in " + info.tool, sxPremiumStepDetail(info) + " Styled with the " + tplName + " template inside the real file."],
       ["Saving the permanent link","Synthex saves the real file's permanent link to this product itself — there is nothing for you to paste, copy or save."]
     ];
   }
@@ -2042,7 +2129,7 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
       + '<button type="button" class="sx-act" data-sx-pv-preview>Preview content</button>'
       + '<button type="button" class="sx-act" data-sx-pv-close>Close</button>'
       + '</div>'
-      + '<div class="sx-preview-box" data-sx-preview-box hidden></div>'
+      + '<div class="sx-preview-box sx-premium-doc" data-sx-preview-box hidden></div>'
       + perm
       + '</div>';
   }
@@ -2436,6 +2523,7 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
       lines.push("## " + (i+1) + ". " + title);
       lines.push(s);
       lines.push("Do this first, in order. Keep each step small enough to finish in one sitting, tick it off, and move on — the system works because it is simple enough to repeat every week.");
+      lines.push("> Key takeaway: Finish the one clear action in this chapter — " + title + " — before moving on. Small, finished steps are what make the whole system stick.");
       lines.push("");
     });
     lines.push("## Your first 7 days");
@@ -2451,21 +2539,32 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
   }
 
   function mdToHtml(md){
-    var html = "", inList = false, inTable = false;
+    var html = "", inList = false, inTable = false, tableRow = 0;
     md.split("\n").forEach(function(line){
       var t = line.trim();
       if(t.indexOf("|") === 0){
         if(/^\|[\s\-|]+\|$/.test(t)){ return; }
         var cells = t.split("|").slice(1,-1).map(function(c){ return c.trim(); });
-        if(!inTable){ html += "<table>"; inTable = true; }
-        html += "<tr>" + cells.map(function(c){ return "<td>" + esc(c) + "</td>"; }).join("") + "</tr>";
+        if(!inTable){ html += "<table>"; inTable = true; tableRow = 0; }
+        /* SX_PREMIUM: the first row of every table / worksheet is a
+           shaded header row, not a plain row. */
+        var tag = tableRow === 0 ? "th" : "td";
+        html += "<tr>" + cells.map(function(c){ return "<" + tag + ">" + esc(c) + "</" + tag + ">"; }).join("") + "</tr>";
+        tableRow++;
         return;
       }
       if(inTable){ html += "</table>"; inTable = false; }
       if(t.indexOf("- ") === 0){ if(!inList){ html += "<ul>"; inList = true; } html += "<li>" + esc(t.slice(2)) + "</li>"; return; }
       if(inList){ html += "</ul>"; inList = false; }
-      if(t.indexOf("# ") === 0) html += "<h1>" + esc(t.slice(2)) + "</h1>";
-      else if(t.indexOf("## ") === 0) html += "<h2>" + esc(t.slice(3)) + "</h2>";
+      if(t.indexOf("> ") === 0){
+        /* SX_PREMIUM callout / key-takeaway box (one after every chapter). */
+        var co = t.slice(2);
+        if(co.indexOf("Key takeaway:") === 0) co = "<b>Key takeaway:</b>" + esc(co.slice("Key takeaway:".length));
+        else co = esc(co);
+        html += '<div class="sx-callout">' + co + "</div>";
+      }
+      else if(t.indexOf("# ") === 0) html += "<h1>" + esc(t.slice(2)) + "</h1>";
+      else if(t.indexOf("## ") === 0) html += '<h2 class="sx-chapter-heading">' + esc(t.slice(3)) + "</h2>";
       else if(t) html += "<p>" + esc(t) + "</p>";
     });
     if(inList) html += "</ul>"; if(inTable) html += "</table>";
@@ -2526,7 +2625,7 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
 
   var TEMPLATE_SETS = {
     pdf: [
-      ["Clean Pro","Clean, professional PDF layout — clear headings, generous white space, easy reading.","linear-gradient(135deg,#2f7bff,#57a6ff)",["PDF","A4","Print-ready"]],
+      ["Clean Pro","Premium PDF layout — designed cover, coloured headings, shaded tables and callouts, with clean spacing and easy reading.","linear-gradient(135deg,#2f7bff,#57a6ff)",["PDF","Premium","A4","Print-ready"]],
       ["Bold Cover","Large bold cover page plus strong chapter pages, best for launches.","linear-gradient(135deg,#ff512f,#dd2476)",["PDF","Bold","Cover + chapters"]],
       ["Minimal Guide","Light, minimal guide style — less design, full focus on the content.","linear-gradient(135deg,#434343,#868686)",["PDF","Minimal","Guide"]],
       ["Workbook Plus","Worksheet and checklist pages after every chapter.","linear-gradient(135deg,#11998e,#38ef7d)",["PDF","Workbook","Checklists"]],
@@ -2580,7 +2679,7 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
 
   var FINISH_STEPS = [
     ["Writing the full product content","Every section, worked example and checklist — complete, not an outline."],
-    ["Applying the template","Cover, headings and layout in the style of the template you picked."],
+    ["Applying the template","Premium cover, coloured headings, shaded table headers and callout boxes — in the style of the template you picked."],
     ["Preparing it for its real file","Once you approve, Synthex creates the real file itself in the connected tool — Google Docs, Google Sheets, Notion, Canva or Figma."],
     ["No temporary files","Nothing is made as a blob or browser-only file — the product only counts once Synthex has created its real file in the tool and saved its permanent link."],
     ["Final check","Content, order and completeness checked — then it is ready for your review."]
@@ -2624,14 +2723,16 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
     var html = '<div class="sx-card sx-review-card"><div class="sx-review-top"><div><h4>Review &amp; Approve</h4><p class="sub">' + esc(opt.title) + " · Template: " + esc(tpl.name) + " · " + esc(opt.format) + '</p></div><button type="button" class="sx-approve" data-sx-approve>✓ Approve</button></div>'
       + '<div class="sx-final-cover" style="background:' + tpl.swatch + '"><b>' + esc(opt.title) + "</b></div>"
       + '<div class="sx-preview-tabs"><button type="button" class="sx-tab on" data-sx-pv="cover">Cover</button><button type="button" class="sx-tab" data-sx-pv="contents">Contents</button><button type="button" class="sx-tab" data-sx-pv="sample">Sample page</button></div>'
-      + '<div class="sx-doc" data-sx-preview style="max-height:380px"></div>'
+      + '<div class="sx-doc sx-premium-doc" data-sx-preview style="max-height:380px"></div>'
       + '<p class="sx-note">Review the full product above — when everything looks right, press <b style="color:#4ade80">Approve</b>. After that you do nothing except watch: Synthex automatically creates the <b>real file</b> itself in the connected tool (Google Docs / Sheets, Notion, Canva or Figma) and saves its permanent link itself. The product becomes <b>Ready to sell</b> only when that real file exists — never from a temporary blob link.</p></div>';
     var msg = addMsg("assistant", html);
     var pv = msg.querySelector("[data-sx-preview]");
     var views = {
-      cover: "<h1>" + esc(opt.title) + "</h1><p>" + esc(opt.desc) + "</p><p><b>For:</b> " + esc(niche.audience) + "</p><p>" + estimateFor(opt).replace(/<[^>]+>/g,"") + "</p>",
-      contents: "<h1>Contents</h1><ul>" + secsList + "</ul>",
-      sample: mdToHtml(currentMarkdown)
+      cover: '<div class="sx-premium-band"><div class="sx-premium-kicker">Designed cover · Premium</div><div class="sx-premium-title">' + esc(opt.title) + '</div><div class="sx-premium-sub">' + esc(opt.desc) + "</div></div>"
+        + "<p><b>For:</b> " + esc(niche.audience) + "</p><p>" + estimateFor(opt).replace(/<[^>]+>/g,"") + "</p>"
+        + '<div class="sx-callout"><b>Key takeaway:</b> Start with the first chapter and finish its one clear action before moving on — every chapter ends with a key-takeaway box like this one.</div>',
+      contents: '<h2 class="sx-chapter-heading">Contents</h2><ul class="sx-premium-toc">' + secsList + "</ul>",
+      sample: categoryFor(opt) === "sheet" ? sxSheetPreviewInner({ opt: opt }) : mdToHtml(currentMarkdown)
     };
     function setView(k){ pv.innerHTML = views[k]; msg.querySelectorAll("[data-sx-pv]").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-sx-pv") === k); }); }
     setView("cover");
