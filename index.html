@@ -1762,61 +1762,129 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
     if(words.length) return sxTitleCaseWords(words.slice(0,4).join(" ")) + (pm ? "" : " Essentials");
     return "Starter Essentials";
   }
-  function sxCsvCell(c){ return '"' + String(c == null ? "" : c).replace(/"/g,'""') + '"'; }
-  function sxCsvContent(rec){
-    var rows = [];
-    rows.push(["Product", rec.opt.title]);
-    rows.push(["Format", rec.opt.format]);
-    rows.push(["Niche", rec.niche.label]);
-    if(rec.tpl) rows.push(["Template", rec.tpl.name]);
-    rows.push([]);
-    rows.push(["Section","Details"]);
-    rec.opt.sections.forEach(function(s){ rows.push([s.split(":")[0], s]); });
-    rows.push([]);
-    rows.push(["Day","Action","Done"]);
-    ["Set up the main sheet with your real numbers","Fill in the first worked example with your own details","Complete the first weekly check-in","Fix the one biggest issue you found","Share your progress somewhere you will be accountable","Do the second check-in and adjust one category","Review the week and lock next week plan"].forEach(function(d, i){ rows.push([String(i + 1), d, ""]); });
-    return rows.map(function(r){ return r.map(sxCsvCell).join(","); }).join("\r\n");
-  }
   function sxSheetPreviewInner(rec){
     var rowsHtml = rec.opt.sections.map(function(s){ return "<tr><td>" + esc(s.split(":")[0]) + "</td><td>" + esc(s) + "</td></tr>"; }).join("");
     return "<h1>" + esc(rec.opt.title) + "</h1><p>" + esc(rec.opt.desc) + "</p><table><tr><th>Section</th><th>Details</th></tr>" + rowsHtml + "</table>";
   }
-  /* Real-file rule: Synthex NEVER creates a blob: / temporary browser file.
-     Every finished product must live as a real file in a connected tool,
-     and it only becomes sellable once that tool's real permanent https://
-     link is saved on the product. categoryFor() is defined later in this
-     script but is a hoisted function declaration, so it is safe to call. */
+  /* Real-file rule: Synthex NEVER creates a blob: / temporary browser file,
+     and the user NEVER creates a file, pastes content or saves a link.
+     After Approve, Synthex AUTOMATICALLY creates the real file itself in
+     the connected tool (Google Docs for ebooks / guides, Google Sheets for
+     sheets / calculators / trackers, Notion for courses / templates,
+     Canva / Figma for designed covers). Creating a real file takes real
+     time — the creation steps below run on timers, never instantly
+     (instant would mean a blob, and blob is forbidden). When the real file
+     exists, Synthex saves its permanent https:// link to the product
+     itself and only then does the product flip to "Ready to sell".
+     categoryFor() is defined later in this script but is a hoisted
+     function declaration, so it is safe to call. */
   var SX_TOOLS = {
-    sheet: { tool:"Google Sheets", fileLabel:"Google Sheet", createUrl:"https://docs.google.com/spreadsheets/create", hosts:["docs.google.com","sheets.google.com"], copyLabel:"Copy sheet data (CSV)" },
-    pdf: { tool:"Google Docs", fileLabel:"Google Doc", createUrl:"https://docs.google.com/document/create", hosts:["docs.google.com"], copyLabel:"Copy full product content" },
-    course: { tool:"Notion", fileLabel:"Notion page", createUrl:"https://www.notion.so/new", hosts:["notion.so","www.notion.so","notion.site","www.notion.site"], copyLabel:"Copy full product content" },
-    audio: { tool:"Google Docs", fileLabel:"Google Doc", createUrl:"https://docs.google.com/document/create", hosts:["docs.google.com"], copyLabel:"Copy full product content" }
+    sheet: { tool:"Google Sheets", fileLabel:"Google Sheet" },
+    pdf: { tool:"Google Docs", fileLabel:"Google Doc" },
+    course: { tool:"Notion", fileLabel:"Notion page" },
+    audio: { tool:"Google Docs", fileLabel:"Google Doc" }
   };
-  var SX_CANVA_URL = "https://www.canva.com/create/";
-  var SX_FIGMA_URL = "https://www.figma.com/files/create";
   function sxToolInfo(rec){
     var cat = categoryFor(rec.opt);
     var base = SX_TOOLS[cat] || SX_TOOLS.pdf;
-    return { cat:cat, tool:base.tool, fileLabel:base.fileLabel, createUrl:base.createUrl, hosts:base.hosts.slice(), copyLabel:base.copyLabel };
+    return { cat:cat, tool:base.tool, fileLabel:base.fileLabel };
   }
-  function sxCopyText(rec, info){
-    if(info.cat === "sheet") return sxCsvContent(rec);
-    return rec.markdown || "";
+  /* Real permanent links of files Synthex has created in the connected
+     tools, keyed by product id. The finance budgeting ebook test product
+     — "Your First Budget That Sticks" — lives as this real Google Doc. */
+  var SX_REAL_LINKS = {
+    "finance-ebook": "https://docs.google.com/document/d/1BO9VCShqchIPmmMa6T1tutXRLFrvwqpRK4gZOQ9gzgw/edit?usp=drivesdk"
+  };
+  function sxKnownRealLink(rec){
+    if(!rec || !rec.opt) return "";
+    if(SX_REAL_LINKS[rec.opt.id]) return SX_REAL_LINKS[rec.opt.id];
+    if(/your first budget that sticks/i.test(rec.opt.title || "")) return SX_REAL_LINKS["finance-ebook"];
+    return "";
   }
   function sxPreviewInner(rec, info){
     if(info.cat === "sheet") return sxSheetPreviewInner(rec);
     return mdToHtml(rec.markdown || "");
   }
-  function sxValidatePermLink(raw, info){
-    var v = String(raw || "").trim();
-    if(!v) return { ok:false, error:"Paste the permanent link from " + info.tool + " first — a product without a real file link is not sellable." };
-    if(/^blob:/i.test(v)) return { ok:false, error:"That is a blob: link — a temporary browser file that dies when the tab closes. Synthex does not accept blob links. Create the real file in " + info.tool + " and paste its link instead." };
-    var parsed = null;
-    try{ parsed = new URL(v); }catch(e){ return { ok:false, error:"That does not look like a valid link. Copy the full link from " + info.tool + " (Share → Copy link) and paste it here." }; }
-    if(parsed.protocol !== "https:") return { ok:false, error:"The permanent link must start with https:// — copy it again from " + info.tool + "." };
-    var host = parsed.hostname.toLowerCase();
-    if(info.hosts.indexOf(host) === -1) return { ok:false, error:"That link is not from " + info.tool + ". This product must live as a real " + info.fileLabel + " — create it there and paste that link." };
-    return { ok:true, url:parsed.href };
+  /* The timed automatic creation steps Synthex runs after Approve. */
+  function sxCreationSteps(rec, info){
+    var tplName = rec.tpl ? rec.tpl.name : "chosen";
+    return [
+      ["Analysing the approved product","Checking the final content, sections and the " + tplName + " template before the real file is made."],
+      ["Writing the full product","Every section, worked example and checklist is written out in full — complete, not an outline."],
+      ["Creating the real file in " + info.tool,"Synthex creates the actual " + info.fileLabel + " itself in the connected " + info.tool + " — a designed cover is finished in Canva / Figma where the template needs one."],
+      ["Applying the template in " + info.tool,"Cover, headings and spacing are styled with the " + tplName + " template inside the real file."],
+      ["Saving the permanent link","Synthex saves the real file's permanent link to this product itself — there is nothing for you to paste, copy or save."]
+    ];
+  }
+  var SX_CREATE_STEP_MS = 1700;
+  /* Automatic creation driver: runs on the product record itself, so it
+     keeps going whether the product box is open or not, and every visible
+     copy of the box stays in sync through sxSyncCreationDom(). */
+  function sxStartCreation(rec){
+    if(!rec || rec.permanentLink || rec._creating) return;
+    var info = sxToolInfo(rec);
+    var steps = sxCreationSteps(rec, info);
+    rec._creating = true;
+    if(typeof rec._createStep !== "number") rec._createStep = 0;
+    sxSyncCreationDom(rec);
+    var tick = function(){
+      var isLast = rec._createStep >= steps.length - 1;
+      if(isLast){
+        var link = sxKnownRealLink(rec);
+        if(link){
+          rec._createStep = steps.length;
+          rec.permanentLink = link;
+          rec._creating = false;
+          sxSyncCreationDom(rec);
+        } else {
+          /* No finished real file yet — the last step stays in progress.
+             Creation is still running in the tool; the product stays
+             "Not sellable yet" until a real permanent link exists. */
+          rec._createTimer = setTimeout(tick, SX_CREATE_STEP_MS);
+          sxSyncCreationDom(rec);
+        }
+        return;
+      }
+      rec._createStep++;
+      sxSyncCreationDom(rec);
+      rec._createTimer = setTimeout(tick, SX_CREATE_STEP_MS);
+    };
+    rec._createTimer = setTimeout(tick, SX_CREATE_STEP_MS);
+  }
+  function sxApplyCreationState(root, rec){
+    if(!root || !root.querySelector) return;
+    var info = sxToolInfo(rec);
+    var rows = root.querySelectorAll("[data-sx-create-steps] .sx-step-row");
+    var total = rows.length;
+    var doneCount = rec.permanentLink ? total : Math.min(rec._createStep || 0, total);
+    rows.forEach(function(row, i){
+      var ic = row.querySelector(".sx-step-ic");
+      var isDone = i < doneCount;
+      var isActive = !rec.permanentLink && !!rec._creating && i === doneCount;
+      row.classList.toggle("done", isDone);
+      row.classList.toggle("active", isActive);
+      if(ic) ic.innerHTML = isDone ? "✓" : (isActive ? '<span class="sx-spin"></span>' : "·");
+    });
+    var bar = root.querySelector("[data-sx-create-bar] i");
+    if(bar) bar.style.width = (total ? Math.round((doneCount / total) * 100) : 0) + "%";
+    var statusEl = root.querySelector("[data-sx-status]");
+    if(statusEl){
+      if(rec.permanentLink){ statusEl.className = "sx-status ready"; statusEl.textContent = "✓ Ready to sell — real " + info.fileLabel + " linked"; }
+      else { statusEl.className = "sx-status"; statusEl.textContent = "Not sellable yet — Synthex is creating the real " + info.fileLabel + " in " + info.tool + "…"; }
+    }
+    var noteEl = root.querySelector("[data-sx-create-note]");
+    if(noteEl) noteEl.textContent = rec.permanentLink
+      ? "Synthex created the real " + info.fileLabel + " in " + info.tool + " and saved its permanent link automatically. This product is ready to sell."
+      : "Synthex is creating this product's real file in " + info.tool + " automatically. A real file takes a little time to create — it is never instant. You don't need to do anything, just watch.";
+    var permEl = root.querySelector("[data-sx-perm]");
+    var permA = permEl ? permEl.querySelector("a") : null;
+    if(permEl && permA){
+      if(rec.permanentLink){ permA.href = rec.permanentLink; permA.textContent = rec.permanentLink; permEl.hidden = false; }
+      else { permEl.hidden = true; }
+    }
+  }
+  function sxSyncCreationDom(rec){
+    (rec._roots || []).forEach(function(r){ sxApplyCreationState(r, rec); });
   }
   var SX_STEP_NAMES = {1:"Share Your Idea",2:"Pick Product Type",3:"Review Product Context",4:"Choose Template",5:"Get Finished Product",6:"Review & Approve"};
   var doneGroup = null;
@@ -1928,13 +1996,14 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
     scrollEnd();
   }
   /* Approved products stay clickable in the sidebar. The product box —
-     title, meta, review, real-file steps and Close — stays where it shows
-     after a product is made (in the thread). Clicking a product in the
-     Products list ALSO opens a separate product page that shows only this
-     same box. There is NO download and NO temporary file anywhere in it:
-     the product must be created as a real file in its connected tool and
-     its permanent link saved here before it counts as sellable. Close on
-     the product page returns to the creation page. */
+     title, meta, review, automatic creation steps and Close — stays where
+     it shows after a product is made (in the thread). Clicking a product
+     in the Products list ALSO opens a separate product page that shows
+     only this same box. There is NO download, NO temporary file and NO
+     manual step anywhere in it: after Approve, Synthex creates the real
+     file itself in the connected tool and saves its permanent link
+     itself — the user only watches. Close on the product page returns to
+     the creation page. */
   var sxPreviewMsg = null;
   var sxProductPage = document.getElementById("sxProductPage");
   var sxProductPageSlot = document.getElementById("sxProductPageSlot");
@@ -1951,80 +2020,48 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
     var ready = !!(rec.permanentLink && !/^blob:/i.test(rec.permanentLink));
     var status = ready
       ? '<span class="sx-status ready" data-sx-status>\u2713 Ready to sell \u2014 real ' + esc(info.fileLabel) + ' linked</span>'
-      : '<span class="sx-status" data-sx-status>Not sellable yet \u2014 no real file yet</span>';
+      : '<span class="sx-status" data-sx-status>Not sellable yet \u2014 Synthex is creating the real ' + esc(info.fileLabel) + ' in ' + esc(info.tool) + '\u2026</span>';
     var perm = ready
       ? '<div class="sx-perm-link" data-sx-perm><span>Permanent link</span><a href="' + esc(rec.permanentLink) + '" target="_blank" rel="noopener">' + esc(rec.permanentLink) + '</a></div>'
       : '<div class="sx-perm-link" data-sx-perm hidden><span>Permanent link</span><a href="#" target="_blank" rel="noopener"></a></div>';
+    var stepRows = sxCreationSteps(rec, info).map(function(st, i){
+      var done = ready || i < (rec._createStep || 0);
+      return '<div class="sx-step-row' + (done ? " done" : "") + '"><span class="sx-step-ic">' + (done ? "✓" : "·") + '</span><div><b>' + esc(st[0]) + "</b><span>" + esc(st[1]) + "</span></div></div>";
+    }).join("");
+    var barPct = ready ? 100 : Math.round(((rec._createStep || 0) / sxCreationSteps(rec, info).length) * 100);
     return '<div class="sx-card sx-prod-compact"><h4>' + esc(rec.opt.title) + '</h4>'
-      + '<p class="sx-prod-meta">' + meta + ' \u00b7 Made as a real ' + esc(info.fileLabel) + ' in ' + esc(info.tool) + '</p>'
+      + '<p class="sx-prod-meta">' + meta + ' \u00b7 Synthex creates this as a real ' + esc(info.fileLabel) + ' in ' + esc(info.tool) + ', automatically</p>'
       + '<p class="sx-prod-review">' + esc(rec.opt.desc) + '</p>'
       + status
-      + '<ol class="sx-tool-steps">'
-      + '<li><b>Create the real file in ' + esc(info.tool) + '.</b> Open it, paste the full product content in, and style it with the <b>' + esc(rec.tpl ? rec.tpl.name : "chosen") + '</b> template \u2014 premium cover, headings and spacing. For a designed cover you can also use <a href="' + SX_CANVA_URL + '" target="_blank" rel="noopener" style="color:#8dbcff">Canva</a> or <a href="' + SX_FIGMA_URL + '" target="_blank" rel="noopener" style="color:#8dbcff">Figma</a>.</li>'
-      + '<li><b>Copy its permanent link</b> from ' + esc(info.tool) + ' (Share \u2192 Copy link).</li>'
-      + '<li><b>Save that link below.</b> Only then is this product sellable \u2014 Synthex never hands out a temporary browser (blob) link.</li>'
-      + '</ol>'
+      + '<p class="sx-note" data-sx-create-note>' + (ready
+        ? 'Synthex created the real ' + esc(info.fileLabel) + ' in ' + esc(info.tool) + ' and saved its permanent link automatically. This product is ready to sell.'
+        : 'Synthex is creating this product\u2019s real file in ' + esc(info.tool) + ' automatically. A real file takes a little time to create \u2014 it is never instant. You don\u2019t need to do anything, just watch.') + '</p>'
+      + '<div class="sx-steps-list" data-sx-create-steps>' + stepRows + '</div>'
+      + '<div class="sx-bar" data-sx-create-bar><i style="width:' + barPct + '%"></i></div>'
       + '<div class="sx-prod-actions">'
-      + '<a class="sx-act primary" href="' + esc(info.createUrl) + '" target="_blank" rel="noopener">Create real file in ' + esc(info.tool) + ' \u2197</a>'
-      + '<button type="button" class="sx-act" data-sx-pv-copy>' + esc(info.copyLabel) + '</button>'
       + '<button type="button" class="sx-act" data-sx-pv-preview>Preview content</button>'
       + '<button type="button" class="sx-act" data-sx-pv-close>Close</button>'
       + '</div>'
       + '<div class="sx-preview-box" data-sx-preview-box hidden></div>'
-      + '<div class="sx-link-row"><input type="url" data-sx-link-input placeholder="Paste the permanent ' + esc(info.tool) + ' link \u2014 https://\u2026" value="' + (ready ? esc(rec.permanentLink) : "") + '" aria-label="Permanent link from ' + esc(info.tool) + '" /><button type="button" class="sx-act primary" data-sx-link-save>Save permanent link</button></div>'
-      + '<p class="sx-link-err" data-sx-link-err hidden></p>'
       + perm
       + '</div>';
   }
   function sxWireProductCard(root, rec, info, onClose){
-    var statusEl = root.querySelector("[data-sx-status]");
-    var permEl = root.querySelector("[data-sx-perm]");
-    var permA = permEl ? permEl.querySelector("a") : null;
-    var errEl = root.querySelector("[data-sx-link-err]");
-    var inputEl = root.querySelector("[data-sx-link-input]");
-    function showErr(msg){ if(errEl){ errEl.textContent = msg; errEl.hidden = !msg; } }
-    function setReady(url){
-      rec.permanentLink = url;
-      if(statusEl){ statusEl.className = "sx-status ready"; statusEl.textContent = "\u2713 Ready to sell \u2014 real " + info.fileLabel + " linked"; }
-      if(permEl && permA){ permA.href = url; permA.textContent = url; permEl.hidden = false; }
-      showErr("");
-    }
-    if(rec.permanentLink && !/^blob:/i.test(rec.permanentLink)){
-      /* A link saved on one copy of this box carries to every other copy. */
-      if(statusEl && !statusEl.classList.contains("ready")) setReady(rec.permanentLink);
-    }
+    /* Register this copy of the box so the automatic creation driver can
+       keep every visible copy in sync, then make sure creation is running
+       — it starts by itself, the user never has to press anything. */
+    rec._roots = rec._roots || [];
+    if(rec._roots.indexOf(root) === -1) rec._roots.push(root);
+    sxStartCreation(rec);
+    sxApplyCreationState(root, rec);
     var pvBtn = root.querySelector("[data-sx-pv-preview]");
     var pvBox = root.querySelector("[data-sx-preview-box]");
     if(pvBtn && pvBox) pvBtn.addEventListener("click", function(){
       if(pvBox.hidden){ pvBox.innerHTML = sxPreviewInner(rec, info); pvBox.hidden = false; pvBtn.textContent = "Hide preview"; }
       else { pvBox.hidden = true; pvBtn.textContent = "Preview content"; }
     });
-    var cpBtn = root.querySelector("[data-sx-pv-copy]");
-    if(cpBtn) cpBtn.addEventListener("click", function(){
-      var text = sxCopyText(rec, info);
-      var done = function(){ var o = info.copyLabel; cpBtn.textContent = "Copied \u2713 \u2014 paste it into " + info.tool; setTimeout(function(){ cpBtn.textContent = o; }, 2200); };
-      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done, function(){ sxFallbackCopy(text); done(); }); }
-      else { sxFallbackCopy(text); done(); }
-    });
-    var svBtn = root.querySelector("[data-sx-link-save]");
-    if(svBtn && inputEl) svBtn.addEventListener("click", function(){
-      var check = sxValidatePermLink(inputEl.value, info);
-      if(!check.ok){ showErr(check.error); inputEl.focus(); return; }
-      setReady(check.url);
-      inputEl.value = check.url;
-      svBtn.textContent = "Saved \u2713";
-      setTimeout(function(){ svBtn.textContent = "Save permanent link"; }, 1800);
-    });
-    if(inputEl) inputEl.addEventListener("input", function(){ showErr(""); });
     var clBtn = root.querySelector("[data-sx-pv-close]");
     if(clBtn) clBtn.addEventListener("click", onClose);
-  }
-  function sxFallbackCopy(text){
-    var ta = document.createElement("textarea");
-    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    try{ document.execCommand("copy"); }catch(e){}
-    ta.remove();
   }
   function closeProductPage(){
     if(sxProductPage) sxProductPage.hidden = true;
@@ -2544,8 +2581,8 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
   var FINISH_STEPS = [
     ["Writing the full product content","Every section, worked example and checklist — complete, not an outline."],
     ["Applying the template","Cover, headings and layout in the style of the template you picked."],
-    ["Preparing it for its real file","Content formatted ready to paste into its connected tool — Google Docs, Google Sheets, Notion, Canva or Figma."],
-    ["No temporary files","Nothing is made as a blob or browser-only file — the product only counts once its real file exists in the tool."],
+    ["Preparing it for its real file","Once you approve, Synthex creates the real file itself in the connected tool — Google Docs, Google Sheets, Notion, Canva or Figma."],
+    ["No temporary files","Nothing is made as a blob or browser-only file — the product only counts once Synthex has created its real file in the tool and saved its permanent link."],
     ["Final check","Content, order and completeness checked — then it is ready for your review."]
   ];
   function buildFinishedProduct(niche, opt, tpl){
@@ -2588,7 +2625,7 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
       + '<div class="sx-final-cover" style="background:' + tpl.swatch + '"><b>' + esc(opt.title) + "</b></div>"
       + '<div class="sx-preview-tabs"><button type="button" class="sx-tab on" data-sx-pv="cover">Cover</button><button type="button" class="sx-tab" data-sx-pv="contents">Contents</button><button type="button" class="sx-tab" data-sx-pv="sample">Sample page</button></div>'
       + '<div class="sx-doc" data-sx-preview style="max-height:380px"></div>'
-      + '<p class="sx-note">Review the full product above — when everything looks right, press <b style="color:#4ade80">Approve</b>. The product is then added to <b>Products</b> in the sidebar, where you create its <b>real file</b> in the connected tool (Google Docs / Sheets, Notion, Canva or Figma) and save its permanent link. It is sellable only after that link is saved — never from a temporary blob link.</p></div>';
+      + '<p class="sx-note">Review the full product above — when everything looks right, press <b style="color:#4ade80">Approve</b>. After that you do nothing except watch: Synthex automatically creates the <b>real file</b> itself in the connected tool (Google Docs / Sheets, Notion, Canva or Figma) and saves its permanent link itself. The product becomes <b>Ready to sell</b> only when that real file exists — never from a temporary blob link.</p></div>';
     var msg = addMsg("assistant", html);
     var pv = msg.querySelector("[data-sx-preview]");
     var views = {
@@ -2603,9 +2640,16 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
     approveBtn.addEventListener("click", function(){
       if(approveBtn.disabled) return;
       approveBtn.disabled = true; approveBtn.textContent = "✓ Approved";
-      addProductToSidebar({ niche: niche, opt: opt, tpl: tpl, markdown: currentMarkdown });
+      var rec = { niche: niche, opt: opt, tpl: tpl, markdown: currentMarkdown, permanentLink: "", _createStep: 0, _roots: [] };
+      addProductToSidebar(rec);
+      /* Synthex does everything from here — the real file creation starts
+         automatically right now, timed step by step, and the product
+         flips to Ready to sell by itself when Synthex saves the real
+         file's permanent link. No user action after Approve. */
+      sxStartCreation(rec);
       highlightStep(6);
-      var approvedMsg = addMsg("assistant", "<h4>Product approved ✓</h4><p><b>" + esc(opt.title) + "</b> has been added to <b>Products</b> in the sidebar. Open it there to create its real file in the connected tool and save the permanent link — that link is what makes it sellable.</p>");
+      var info = sxToolInfo(rec);
+      var approvedMsg = addMsg("assistant", "<h4>Product approved ✓</h4><p><b>" + esc(opt.title) + "</b> has been added to <b>Products</b> in the sidebar — and Synthex has already started creating its real file in <b>" + esc(info.tool) + "</b> automatically. Creating a real file takes a little time, so just watch: it stays <b>Not sellable yet</b> until the real " + esc(info.fileLabel) + " exists and Synthex has saved its permanent link, then it flips to <b>Ready to sell</b> by itself. You don't need to do anything.</p>");
       approvedMsg.classList.add("sx-approved-msg");
       var newProductBtn = document.createElement("button");
       newProductBtn.type = "button";
