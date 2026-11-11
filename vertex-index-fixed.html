@@ -743,6 +743,15 @@ a.sx-act{display:inline-flex;align-items:center;text-decoration:none}
 body.tool-open #topnav,body.tool-open #mobileMenu{display:none!important}
 body.tool-open .tool-page{padding-top:26px}
 #page-synthex{padding-top:0}
+/* The tool-card "Open →" link and the <body> state class share the name
+   tool-open, so the link rule .tool-open{padding-top:28px} also landed on
+   <body> itself whenever a tool page opened: a ~28px empty black band
+   above the workspace top bar, and — the Synthex shell being 100dvh
+   tall — exactly that much pointless page scroll to go with it. Only
+   the padding is taken back on <body> (everything else the body gets
+   from that rule stays as it was), so the Synthex top bar now sits
+   flush at the very top of the page, at scroll 0 and after scrolling. */
+body.tool-open{padding-top:0}
 #page-synthex .sx-winbar{position:sticky;top:0;z-index:55;padding:6px 14px;min-height:0;background:rgba(15,16,21,.52);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);border-bottom:1px solid var(--sx-glass-line)}
 #page-synthex .sx-winbar .win-title{line-height:1.2}
 #page-synthex .side{top:46px;height:calc(100dvh - 46px);max-height:calc(100dvh - 46px);background:var(--sx-glass-bg);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5)}
@@ -976,20 +985,32 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
    the left, transparent like the steps; on hover it fills solid white with
    dark text (white pill). Hover changes colours ONLY: every size value is
    re-declared on :hover and transform is pinned to none, so the button is
-   exactly step-button sized in both states. */
+   exactly step-button sized in both states. NO transition anywhere on this
+   button: the border used to snap to white instantly while the background
+   faded in over .2s, so mid-hover it briefly looked like a selected step
+   (white border, transparent fill) before turning white. With transition
+   removed, background, border and text all switch in the same frame —
+   hover is solid white immediately, with no in-between stage. */
 .sx-back-vertex,
 #page-synthex .side .sx-step{box-sizing:border-box;height:40px;min-height:40px;max-height:40px;padding:9px 12px;font-size:13.5px;font-weight:500;line-height:20px;letter-spacing:normal;border-radius:10px;gap:10px;transform:none}
 .sx-back-vertex svg,
 #page-synthex .side .sx-step svg{width:16px;height:16px}
-.sx-back-vertex{display:flex;align-items:center;justify-content:flex-start;background:transparent;color:#b9b9c2;border:1px solid transparent;box-shadow:none;white-space:nowrap;flex:none;transition:background .2s,color .2s;backdrop-filter:none;-webkit-backdrop-filter:none;width:218px;min-width:218px;max-width:218px;text-align:left;text-decoration:none;cursor:pointer}
+.sx-back-vertex{display:flex;align-items:center;justify-content:flex-start;background:transparent;color:#b9b9c2;border:1px solid transparent;box-shadow:none;white-space:nowrap;flex:none;transition:none;backdrop-filter:none;-webkit-backdrop-filter:none;width:218px;min-width:218px;max-width:218px;text-align:left;text-decoration:none;cursor:pointer}
 .sx-back-vertex svg{flex:none;opacity:.85}
 .sx-back-vertex:hover,
-#page-synthex .sx-winbar .sx-back-vertex:hover{background:#fff;color:#111318;border:1px solid #fff;box-sizing:border-box;height:40px;min-height:40px;max-height:40px;width:218px;min-width:218px;max-width:218px;padding:9px 12px;font-size:13.5px;font-weight:500;line-height:20px;border-radius:10px;gap:10px;transform:none}
-/* Synthex top bar layout: Back to Vertex on the left, "Synthex — My Workspace" centred */
-#page-synthex .sx-winbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px}
-#page-synthex .sx-winbar .sx-back-vertex{width:218px;min-width:218px;max-width:218px;justify-self:start;align-self:center;margin:0}
-#page-synthex .sx-winbar .win-title{justify-self:center;text-align:center;white-space:nowrap}
-#page-synthex .sx-winbar .sx-winbar-spacer{display:block}
+#page-synthex .sx-winbar .sx-back-vertex:hover{background:#fff;color:#111318;border:1px solid #fff;box-sizing:border-box;height:40px;min-height:40px;max-height:40px;width:218px;min-width:218px;max-width:218px;padding:9px 12px;font-size:13.5px;font-weight:500;line-height:20px;border-radius:10px;gap:10px;transform:none;transition:none}
+/* Synthex top bar layout: Back to Vertex on the left, "Synthex — My Workspace"
+   centred over the MAIN area only — NOT over the whole page. The sidebar is
+   250px wide (the first column of .win-body) and must not count in the
+   centring: the title's centre is the centre of the area that starts after
+   the sidebar, i.e. left: 250px + (100% - 250px) / 2, so it sits exactly
+   above the Synthex logo in the middle of the chat / main area. The title is
+   taken out of flow (absolute) so the left button can never pull it off
+   centre, and the bar's height still comes from the button in flow. */
+#page-synthex .sx-winbar{position:relative;display:flex;align-items:center;gap:14px}
+#page-synthex .sx-winbar .sx-back-vertex{width:218px;min-width:218px;max-width:218px;align-self:center;margin:0}
+#page-synthex .sx-winbar .win-title{position:absolute;left:calc(250px + (100% - 250px)/2);transform:translateX(-50%);text-align:center;white-space:nowrap}
+#page-synthex .sx-winbar .sx-winbar-spacer{display:none}
 @media (max-width:700px){
   /* Narrow screens have no room for a full 218px pill next to the centred
      title (and no hover to reveal it): keep the locked step height and let
@@ -999,8 +1020,13 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
   .sx-back-vertex:hover,
   #page-synthex .sx-winbar .sx-back-vertex:hover{width:auto;min-width:0;max-width:none}
 }
-@media (max-width:640px){
-  #page-synthex .sx-winbar{grid-template-columns:auto 1fr}
+@media (max-width:900px){
+  /* At this width .win-body stacks into one column, so there is no 250px
+     sidebar beside the main area any more — the main area is the full width.
+     The title goes back in flow and centres in the space next to the Back
+     button instead of using the desktop 250px offset, which would push it
+     off-centre and into the button on narrow screens. */
+  #page-synthex .sx-winbar .win-title{position:static;transform:none;flex:1;text-align:center}
   #page-synthex .sx-winbar .sx-winbar-spacer{display:none}
 }
 </style>
