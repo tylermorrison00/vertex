@@ -965,6 +965,11 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
 .sx-sheet-table td{border:1px solid #d5dce8;padding:8px 10px;color:#2c3342}
 .sx-sheet-table tbody tr:nth-child(even) td{background:#eef3fb}
 .sx-sheet-table tr.sx-total-row td{font-weight:800;background:#dbe7fb!important;color:#163a7a;border-top:2px solid #163a7a}
+/* Back to Vertex — Synthex sidebar only, styled exactly like the sidebar step items (.s-item / .sx-step): transparent background, same text, same size */
+.sx-back-vertex{display:flex;align-items:center;gap:10px;background:transparent;color:#b9b9c2;font-size:13.5px;font-weight:500;letter-spacing:-.01em;padding:9px 12px;border-radius:10px;border:1px solid transparent;box-shadow:none;white-space:nowrap;flex:none;transition:.2s;backdrop-filter:none;-webkit-backdrop-filter:none;width:100%;text-align:left;text-decoration:none;cursor:pointer}
+.sx-back-vertex svg{width:16px;height:16px;flex:none;opacity:.85}
+.sx-back-vertex:hover{background:rgba(255,255,255,.05);color:#b9b9c2}
+#page-synthex .side .sx-back-vertex{margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -1424,6 +1429,7 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
       </div>
       <div class="win-body">
         <aside class="side" id="sxSidebar">
+          <a class="sx-back-vertex" href="https://vertexplatform.vercel.app/" target="_top" rel="noopener" aria-label="Back to Vertex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>Back to Vertex</a>
           <div class="s-label">Workspace</div>
           <div class="sx-steps" id="sxSteps" aria-label="Synthex steps" style="margin-top:0;padding-top:0;border-top:0">
             <button type="button" class="s-item sx-step on" data-sx-step="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>Share Your Idea</button>
