@@ -976,20 +976,15 @@ html:has(#page-synthex:not([hidden]))::-webkit-scrollbar{width:0;height:0;displa
    the left, transparent like the steps; on hover it fills solid white with
    dark text (white pill). Hover changes colours ONLY: every size value is
    re-declared on :hover and transform is pinned to none, so the button is
-   exactly step-button sized in both states. NO transition anywhere on this
-   button: the border used to snap to white instantly while the background
-   faded in over .2s, so mid-hover it briefly looked like a selected step
-   (white border, transparent fill) before turning white. With transition
-   removed, background, border and text all switch in the same frame —
-   hover is solid white immediately, with no in-between stage. */
+   exactly step-button sized in both states. */
 .sx-back-vertex,
 #page-synthex .side .sx-step{box-sizing:border-box;height:40px;min-height:40px;max-height:40px;padding:9px 12px;font-size:13.5px;font-weight:500;line-height:20px;letter-spacing:normal;border-radius:10px;gap:10px;transform:none}
 .sx-back-vertex svg,
 #page-synthex .side .sx-step svg{width:16px;height:16px}
-.sx-back-vertex{display:flex;align-items:center;justify-content:flex-start;background:transparent;color:#b9b9c2;border:1px solid transparent;box-shadow:none;white-space:nowrap;flex:none;transition:none;backdrop-filter:none;-webkit-backdrop-filter:none;width:218px;min-width:218px;max-width:218px;text-align:left;text-decoration:none;cursor:pointer}
+.sx-back-vertex{display:flex;align-items:center;justify-content:flex-start;background:transparent;color:#b9b9c2;border:1px solid transparent;box-shadow:none;white-space:nowrap;flex:none;transition:background .2s,color .2s;backdrop-filter:none;-webkit-backdrop-filter:none;width:218px;min-width:218px;max-width:218px;text-align:left;text-decoration:none;cursor:pointer}
 .sx-back-vertex svg{flex:none;opacity:.85}
 .sx-back-vertex:hover,
-#page-synthex .sx-winbar .sx-back-vertex:hover{background:#fff;color:#111318;border:1px solid #fff;box-sizing:border-box;height:40px;min-height:40px;max-height:40px;width:218px;min-width:218px;max-width:218px;padding:9px 12px;font-size:13.5px;font-weight:500;line-height:20px;border-radius:10px;gap:10px;transform:none;transition:none}
+#page-synthex .sx-winbar .sx-back-vertex:hover{background:#fff;color:#111318;border:1px solid #fff;box-sizing:border-box;height:40px;min-height:40px;max-height:40px;width:218px;min-width:218px;max-width:218px;padding:9px 12px;font-size:13.5px;font-weight:500;line-height:20px;border-radius:10px;gap:10px;transform:none}
 /* Synthex top bar layout: Back to Vertex on the left, "Synthex — My Workspace" centred */
 #page-synthex .sx-winbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px}
 #page-synthex .sx-winbar .sx-back-vertex{width:218px;min-width:218px;max-width:218px;justify-self:start;align-self:center;margin:0}
